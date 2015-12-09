@@ -1,0 +1,2 @@
+
+CURRENCIES = {'CLP': {'USD': 706}}

@@ -13,6 +13,8 @@ from localflavor.us import us_states
 from . import models, exceptions as express_exceptions
 from paypal import gateway
 from paypal import exceptions
+from paypal import settings
+from paypal import currencies
 
 
 # PayPal methods
@@ -167,10 +169,15 @@ def set_txn(basket, shipping_methods, currency, return_url, cancel_url, update_u
     # Remove None values
     params = dict((k, v) for k, v in _params.items() if v is not None)
 
+    amount = basket.total_incl_tax
+
+    # Do currency conversion if needed
+    if currency != basket.currency:
+        amount = currencies.Currency.convert(amount=amount, from_curr=basket.currency, to_curr=currency)
+
     # PayPal have an upper limit on transactions.  It's in dollars which is a
     # fiddly to work with.  Lazy solution - only check when dollars are used as
     # the PayPal currency.
-    amount = basket.total_incl_tax
     if currency == 'USD' and amount > 10000:
         msg = 'PayPal can only be used for orders up to 10000 USD'
         logger.error(msg)
