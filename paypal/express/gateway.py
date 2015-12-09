@@ -333,7 +333,9 @@ def set_txn(basket, shipping_methods, currency, return_url, cancel_url, update_u
 
     # Set shipping charge explicitly if it has been passed
     if shipping_method:
-        charge = shipping_method.calculate(basket).incl_tax
+        charge = D(shipping_method.calculate(basket).incl_tax)
+        if currency != basket.currency:
+            charge = currencies.Currency.convert(amount=charge, from_curr=basket.currency, to_curr=currency)
         params['PAYMENTREQUEST_0_SHIPPINGAMT'] = _format_currency(charge)
         params['PAYMENTREQUEST_0_AMT'] += charge
 
