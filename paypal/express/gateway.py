@@ -169,7 +169,6 @@ def set_txn(basket, shipping_methods, currency, return_url, cancel_url, update_u
     params = dict((k, v) for k, v in _params.items() if v is not None)
 
     amount = basket.total_incl_tax
-
     # Do currency conversion if needed
     if currency != basket.currency:
         amount = currencies.Currency.convert(amount=amount, from_curr=basket.currency, to_curr=currency)
@@ -209,8 +208,10 @@ def set_txn(basket, shipping_methods, currency, return_url, cancel_url, update_u
         params['L_PAYMENTREQUEST_0_DESC%d' % index] = desc
         # Note, we don't include discounts here - they are handled as separate
         # lines - see below
-        params['L_PAYMENTREQUEST_0_AMT%d' % index] = _format_currency(
-            line.unit_price_incl_tax)
+        line_price = line.unit_price_incl_tax
+        if currency != basket.currency:
+            line_price = currencies.Currency.convert(amount=line_price, from_curr=basket.currency, to_curr=currency)
+        params['L_PAYMENTREQUEST_0_AMT%d' % index] = _format_currency(line_price)
         params['L_PAYMENTREQUEST_0_QTY%d' % index] = line.quantity
 
     # If the order has discounts associated with it, the way PayPal suggests
@@ -225,8 +226,10 @@ def set_txn(basket, shipping_methods, currency, return_url, cancel_url, update_u
         name = _("Special Offer: %s") % discount['name']
         params['L_PAYMENTREQUEST_0_NAME%d' % index] = name
         params['L_PAYMENTREQUEST_0_DESC%d' % index] = _format_description(name)
-        params['L_PAYMENTREQUEST_0_AMT%d' % index] = _format_currency(
-            -discount['discount'])
+        discount_amount = discount['discount']
+        if currency != basket.currency:
+            discount_amount = currencies.Currency.convert(amount=discount_amount, from_curr=basket.currency, to_curr=currency)
+        params['L_PAYMENTREQUEST_0_AMT%d' % index] = _format_currency(-discount_amount)
         params['L_PAYMENTREQUEST_0_QTY%d' % index] = 1
     for discount in basket.voucher_discounts:
         index += 1
@@ -234,16 +237,20 @@ def set_txn(basket, shipping_methods, currency, return_url, cancel_url, update_u
                             discount['voucher'].code)
         params['L_PAYMENTREQUEST_0_NAME%d' % index] = name
         params['L_PAYMENTREQUEST_0_DESC%d' % index] = _format_description(name)
-        params['L_PAYMENTREQUEST_0_AMT%d' % index] = _format_currency(
-            -discount['discount'])
+        discount_amount = discount['discount']
+        if currency != basket.currency:
+            discount_amount = currencies.Currency.convert(amount=discount_amount, from_curr=basket.currency, to_curr=currency)
+        params['L_PAYMENTREQUEST_0_AMT%d' % index] = _format_currency(-discount_amount)
         params['L_PAYMENTREQUEST_0_QTY%d' % index] = 1
     for discount in basket.shipping_discounts:
         index += 1
         name = _("Shipping Offer: %s") % discount['name']
         params['L_PAYMENTREQUEST_0_NAME%d' % index] = name
         params['L_PAYMENTREQUEST_0_DESC%d' % index] = _format_description(name)
-        params['L_PAYMENTREQUEST_0_AMT%d' % index] = _format_currency(
-            -discount['discount'])
+        discount_amount = discount['discount']
+        if currency != basket.currency:
+            discount_amount = currencies.Currency.convert(amount=discount_amount, from_curr=basket.currency, to_curr=currency)
+        params['L_PAYMENTREQUEST_0_AMT%d' % index] = _format_currency(-discount_amount)
         params['L_PAYMENTREQUEST_0_QTY%d' % index] = 1
 
     # We include tax in the prices rather than separately as that's how it's
@@ -260,8 +267,7 @@ def set_txn(basket, shipping_methods, currency, return_url, cancel_url, update_u
     #
     # Hence, if tax is to be shown then it has to be aggregated up to the order
     # level.
-    params['PAYMENTREQUEST_0_ITEMAMT'] = _format_currency(
-        basket.total_incl_tax)
+    params['PAYMENTREQUEST_0_ITEMAMT'] = _format_currency(amount)
     params['PAYMENTREQUEST_0_TAXAMT'] = _format_currency(D('0.00'))
 
     # Instant update callback information
