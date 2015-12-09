@@ -13,7 +13,6 @@ from localflavor.us import us_states
 from . import models, exceptions as express_exceptions
 from paypal import gateway
 from paypal import exceptions
-from paypal import settings
 from paypal import currencies
 
 
