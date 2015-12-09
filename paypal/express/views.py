@@ -218,7 +218,7 @@ class SuccessResponseView(PaymentDetailsView):
             "Basket #%s - showing preview with payer ID %s and token %s",
             kwargs['basket'].id, self.payer_id, self.token)
 
-        return super(SuccessResponseView, self).get(request, *args, **kwargs)
+        return self.render_preview(request, **kwargs)
 
     def load_frozen_basket(self, basket_id):
         # Lookup the frozen basket that this txn corresponds to
