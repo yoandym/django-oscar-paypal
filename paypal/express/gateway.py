@@ -321,7 +321,8 @@ def set_txn(basket, shipping_methods, currency, return_url, cancel_url, update_u
         is_default = index == 0
         params['L_SHIPPINGOPTIONISDEFAULT%d' % index] = 'true' if is_default else 'false'
         charge = method.calculate(basket).incl_tax
-
+        if currency != basket.currency:
+            charge = currencies.Currency.convert(amount=charge, from_curr=basket.currency, to_curr=currency)
         if charge > max_charge:
             max_charge = charge
         if is_default:
